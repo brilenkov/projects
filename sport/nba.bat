@@ -1,2 +1,2 @@
-python NBA.py --path=d:\ODesk\baseball-Misel_Estimov\ --date=11/24/2012
+python NBA.py --path=d:\_github\projects\sport\ --date=11/26/2012
 pause
