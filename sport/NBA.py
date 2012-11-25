@@ -15,7 +15,7 @@ import datetime
 from win32com.client import Dispatch
 
 debugF = False
-#debugF = True
+debugF = True
 
 def weekDay():
     #print curDate.weekday()
@@ -79,6 +79,7 @@ nbateams = {
 nbateamsnames = {
 'Boston':       'BOS',
 'Brooklyn':     'BK',
+  'New Jersey':     'BK',
 'New York':     'NY',
 'Philadelphia': 'PHI',
 'Toronto':      'TOR', 
@@ -227,6 +228,7 @@ def getPastResults(teamName):
                             HV.append('H')
 
                     for td in cols[1:2]: # Opp
+                        #print td.find('a').find(text=True).strip()
                         Opp.append(nbateamsnames[td.find('a').find(text=True).strip()])
                             
                     for td in cols[2:3]: # WL
@@ -377,6 +379,7 @@ pastCount = 0
 pastResults = []
 for pastResName in teamLinkName:
     #return [teamName, Dates, Opp, HV, WL, OU]
+    #print pastResName
     pastResults.append(getPastResults(pastResName))
     #pastResults.append([pastResName, Dates, Opp, HV, WL, OU])
     pastCount+=1
