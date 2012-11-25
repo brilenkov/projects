@@ -1,0 +1,2 @@
+python stocks.py 
+pause
