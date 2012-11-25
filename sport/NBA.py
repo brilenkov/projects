@@ -672,37 +672,38 @@ for eachTeam in pastResults:
         sheet.Range('C'+str(crow)).value = str(pastResults[pCount-2][0])
         sheet.Range('D'+str(crow)).value = str(pastResults[pCount-1][0])
         sheet.Range('E'+str(crow)).value = weekDay()
-        sheet.Range('F'+str(crow)).value = vF
-        sheet.Range('G'+str(crow)).value = vG
-        sheet.Range('H'+str(crow)).value = vH
+        #sheet.Range('F'+str(crow)).value = vF
+        sheet.Range('G'+str(crow)).value = vF
+        sheet.Range('H'+str(crow)).value = vG
+        sheet.Range('J'+str(crow)).value = vH
         
-        sheet.Range('J'+str(crow)).value = str(IJO)
-        sheet.Range('K'+str(crow)).value = str(IJU)
-        sheet.Range('L'+str(crow)).value = str(KLO)
-        sheet.Range('M'+str(crow)).value = str(KLU)
-        sheet.Range('N'+str(crow)).value = str(MNO)
-        sheet.Range('O'+str(crow)).value = str(MNU)
+        sheet.Range('K'+str(crow)).value = str(IJO)
+        sheet.Range('L'+str(crow)).value = str(IJU)
+        sheet.Range('M'+str(crow)).value = str(KLO)
+        sheet.Range('N'+str(crow)).value = str(KLU)
+        sheet.Range('O'+str(crow)).value = str(MNO)
+        sheet.Range('P'+str(crow)).value = str(MNU)
 
         
         if str(pastResults[pCount-2][6]) == str('0'):
-            sheet.Range('Q'+str(crow)).value = ''
-        else:
-            sheet.Range('Q'+str(crow)).value = str(pastResults[pCount-2][6])
-            
-        if str(pastResults[pCount-2][7]) == str('0'):
             sheet.Range('R'+str(crow)).value = ''
         else:
-            sheet.Range('R'+str(crow)).value = str(pastResults[pCount-2][7])
+            sheet.Range('R'+str(crow)).value = str(pastResults[pCount-2][6])
             
-        if str(pastResults[pCount-1][6]) == str('0'):
+        if str(pastResults[pCount-2][7]) == str('0'):
             sheet.Range('S'+str(crow)).value = ''
         else:
-            sheet.Range('S'+str(crow)).value = str(pastResults[pCount-1][6])
+            sheet.Range('S'+str(crow)).value = str(pastResults[pCount-2][7])
             
-        if str(pastResults[pCount-1][7]) == str('0'):
+        if str(pastResults[pCount-1][6]) == str('0'):
             sheet.Range('T'+str(crow)).value = ''
         else:
-            sheet.Range('T'+str(crow)).value = str(pastResults[pCount-1][7])
+            sheet.Range('T'+str(crow)).value = str(pastResults[pCount-1][6])
+            
+        if str(pastResults[pCount-1][7]) == str('0'):
+            sheet.Range('U'+str(crow)).value = ''
+        else:
+            sheet.Range('U'+str(crow)).value = str(pastResults[pCount-1][7])
         
         
         #sheet.Range('Q'+str(crow)).value = str(pastResults[pCount-2][6])
