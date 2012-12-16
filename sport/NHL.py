@@ -13,6 +13,7 @@ import os
 from openpyxl import load_workbook
 import datetime
 from win32com.client import Dispatch
+from decimal import Decimal
 
 debugF = False
 
@@ -300,25 +301,25 @@ soup = BeautifulSoup(''.join(html)) #parse html source
 #print soup
 
 teamNamesArr = soup.findAll('td', attrs={'class':'datab'})
-#print teamNamesArr
+
 teamLinkHref= []
 teamLinkName= []
 SBhome = []
 SBvis = []
+vfav = {}
 j=0
 for teamN in teamNamesArr:
     j+=1
     if j%2 == 0:
         if teamN.find('a', text=True).strip() not in SBhome:
             SBhome.append(teamN.find('a', text=True).strip())
+            vfav.update({teamN.find('a', text=True).strip():teamN.previous.previous.findAll('td')[-1].text.strip()})
     else:
         if teamN.find('a', text=True).strip() not in SBvis:
             SBvis.append(teamN.find('a', text=True).strip())
     if teamN.find('a', text=True).strip() not in teamLinkName:
         teamLinkHref.append(teamN.find('a')['href'])
         teamLinkName.append(teamN.find('a', text=True).strip())
-#print teamLinkName
-
 
 hosts = []
 for tm in teamLinkName:
@@ -658,37 +659,44 @@ for eachTeam in pastResults:
         sheet.Range('C'+str(crow)).value = str(pastResults[pCount-2][0])
         sheet.Range('D'+str(crow)).value = str(pastResults[pCount-1][0])
         sheet.Range('E'+str(crow)).value = weekDay()
-        sheet.Range('F'+str(crow)).value = vF
-        sheet.Range('G'+str(crow)).value = vG
-        sheet.Range('H'+str(crow)).value = vH
+        try:
+            if Decimal(vfav[str(pastResults[pCount-1][0])]) >= 0:
+                sheet.Range('F'+str(crow)).value = 'V'
+            elif Decimal(vfav[str(pastResults[pCount-1][0])]) < 0:
+                sheet.Range('F'+str(crow)).value = 'H'
+        except:
+            sheet.Range('F'+str(crow)).value = ''
+        sheet.Range('G'+str(crow)).value = vF
+        sheet.Range('H'+str(crow)).value = vG
+        sheet.Range('I'+str(crow)).value = vH
         
-        sheet.Range('J'+str(crow)).value = str(IJO)
-        sheet.Range('K'+str(crow)).value = str(IJU)
-        sheet.Range('L'+str(crow)).value = str(KLO)
-        sheet.Range('M'+str(crow)).value = str(KLU)
-        sheet.Range('N'+str(crow)).value = str(MNO)
-        sheet.Range('O'+str(crow)).value = str(MNU)
+        sheet.Range('K'+str(crow)).value = str(IJO)
+        sheet.Range('L'+str(crow)).value = str(IJU)
+        sheet.Range('M'+str(crow)).value = str(KLO)
+        sheet.Range('N'+str(crow)).value = str(KLU)
+        sheet.Range('O'+str(crow)).value = str(MNO)
+        sheet.Range('P'+str(crow)).value = str(MNU)
 
         
         if str(pastResults[pCount-2][6]) == str('0'):
-            sheet.Range('Q'+str(crow)).value = ''
-        else:
-            sheet.Range('Q'+str(crow)).value = str(pastResults[pCount-2][6])
-            
-        if str(pastResults[pCount-2][7]) == str('0'):
             sheet.Range('R'+str(crow)).value = ''
         else:
-            sheet.Range('R'+str(crow)).value = str(pastResults[pCount-2][7])
+            sheet.Range('R'+str(crow)).value = str(pastResults[pCount-2][6])
             
-        if str(pastResults[pCount-1][6]) == str('0'):
+        if str(pastResults[pCount-2][7]) == str('0'):
             sheet.Range('S'+str(crow)).value = ''
         else:
-            sheet.Range('S'+str(crow)).value = str(pastResults[pCount-1][6])
+            sheet.Range('S'+str(crow)).value = str(pastResults[pCount-2][7])
             
-        if str(pastResults[pCount-1][7]) == str('0'):
+        if str(pastResults[pCount-1][6]) == str('0'):
             sheet.Range('T'+str(crow)).value = ''
         else:
-            sheet.Range('T'+str(crow)).value = str(pastResults[pCount-1][7])
+            sheet.Range('T'+str(crow)).value = str(pastResults[pCount-1][6])
+            
+        if str(pastResults[pCount-1][7]) == str('0'):
+            sheet.Range('U'+str(crow)).value = ''
+        else:
+            sheet.Range('U'+str(crow)).value = str(pastResults[pCount-1][7])
         
         
         #sheet.Range('Q'+str(crow)).value = str(pastResults[pCount-2][6])
@@ -696,10 +704,10 @@ for eachTeam in pastResults:
         #sheet.Range('S'+str(crow)).value = str(pastResults[pCount-1][6])
         #sheet.Range('T'+str(crow)).value = str(pastResults[pCount-1][7])
         
-        sheet.Range('V'+str(crow)).value = str(VWO)
-        sheet.Range('W'+str(crow)).value = str(VWU)
-        sheet.Range('X'+str(crow)).value = str(XYO)
-        sheet.Range('Y'+str(crow)).value = str(XYU)
+        sheet.Range('W'+str(crow)).value = str(VWO)
+        sheet.Range('X'+str(crow)).value = str(VWU)
+        sheet.Range('Y'+str(crow)).value = str(XYO)
+        sheet.Range('Z'+str(crow)).value = str(XYU)
         
         sheet.Range('AA'+str(crow)).value = str(AAABO)
         sheet.Range('AB'+str(crow)).value = str(AAABU)

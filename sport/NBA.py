@@ -13,6 +13,7 @@ import os
 from openpyxl import load_workbook
 import datetime
 from win32com.client import Dispatch
+from decimal import Decimal
 
 debugF = False
 debugF = True
@@ -198,14 +199,20 @@ def getPastResults(teamName):
     HV = []
     WL = []
     OU = []
+    SS = []
     pastResLink = teamLinkHref[pastCount]
     #for years in range (0,2):
         
     #url = pastResLink[:pastResLink.rfind('/')] + '/pastresults/' + str(curDate.year - years) + pastResLink[pastResLink.rfind('/'):]
     #print nbateams[teamName]
     for vYear in range (0,2):
-        htmltext = open('NbaPastRes/' + str(curDate.year - vYear) + '_' + 'team' + nbateams[teamName] + '.html','r')
-
+        if int(curDate.month) < 10:
+            htmltext = open('NbaPastRes/' + str(curDate.year - vYear) + '_' + 'team' + nbateams[teamName] + '.html','r')
+            print 'NbaPastRes/' + str(curDate.year - vYear) + '_' + 'team' + nbateams[teamName] + '.html'
+        else:
+            htmltext = open('NbaPastRes/' + str(curDate.year - vYear + 1) + '_' + 'team' + nbateams[teamName] + '.html','r')
+            print 'NbaPastRes/' + str(curDate.year - vYear + 1) + '_' + 'team' + nbateams[teamName] + '.html'
+        
         soup = BeautifulSoup(''.join(htmltext)) #parse html source
         
         #get past data
@@ -234,10 +241,16 @@ def getPastResults(teamName):
                     for td in cols[2:3]: # WL
                         WL.append(td.find(text=True).strip())
                         
-                    for td in cols[6:7]: # OU
+                    for td in cols[5:6]: # OU
                         OU.append(td.find(text=True).replace('\n','').strip()[:1])
+                        
+                    for td in cols[4:5]: # SS
+                        SS.append(td.find(text=True).replace('\n','').strip()[0])
+                    #print SS
+    #print OU
     #print [teamName, Dates, Opp, HV, WL, OU]
-    return [teamName, Dates, Opp, HV, WL, OU]
+    #return [teamName, Dates, Opp, HV, WL, OU]
+    return [teamName, Dates, Opp, HV, WL, OU, SS]
 
 def requestURL(vURL):
 	#print 'Getting URL...'
@@ -313,17 +326,19 @@ soup = BeautifulSoup(''.join(html)) #parse html source
 #print soup
 
 teamNamesArr = soup.findAll('td', attrs={'class':'datab'})
-#print teamNamesArr
+
 teamLinkHref= []
 teamLinkName= []
 SBhome = []
 SBvis = []
+vfav = {}
 j=0
 for teamN in teamNamesArr:
     j+=1
     if j%2 == 0:
         if teamN.find('a', text=True).strip() not in SBhome:
             SBhome.append(teamN.find('a', text=True).strip())
+            vfav.update({teamN.find('a', text=True).strip():teamN.previous.previous.findAll('td')[-1].text.strip()})
     else:
         if teamN.find('a', text=True).strip() not in SBvis:
             SBvis.append(teamN.find('a', text=True).strip())
@@ -331,13 +346,18 @@ for teamN in teamNamesArr:
         teamLinkHref.append(teamN.find('a')['href'])
         teamLinkName.append(teamN.find('a', text=True).strip())
 #print teamLinkName
-
+print vfav
 
 hosts = []
 for tm in teamLinkName:
     #for years in range (0,2):
-    hosts.append('http://www.covers.com/pageLoader/pageLoader.aspx?page=/data/nba/teams/pastresults/' + str(curDate.year - 2) + '-' + str(curDate.year - 1)  + '/team' + nbateams[tm] + '.html') 
-    hosts.append('http://www.covers.com/pageLoader/pageLoader.aspx?page=/data/nba/teams/pastresults/' + str(curDate.year - 1) + '-' + str(curDate.year - 0)  + '/team' + nbateams[tm] + '.html') 
+    #print curDate.month
+    if int(curDate.month) < 10:
+        hosts.append('http://www.covers.com/pageLoader/pageLoader.aspx?page=/data/nba/teams/pastresults/' + str(curDate.year - 2) + '-' + str(curDate.year - 1)  + '/team' + nbateams[tm] + '.html') 
+        hosts.append('http://www.covers.com/pageLoader/pageLoader.aspx?page=/data/nba/teams/pastresults/' + str(curDate.year - 1) + '-' + str(curDate.year - 0)  + '/team' + nbateams[tm] + '.html') 
+    else:
+        hosts.append('http://www.covers.com/pageLoader/pageLoader.aspx?page=/data/nba/teams/pastresults/' + str(curDate.year - 1) + '-' + str(curDate.year - 0)  + '/team' + nbateams[tm] + '.html') 
+        hosts.append('http://www.covers.com/pageLoader/pageLoader.aspx?page=/data/nba/teams/pastresults/' + str(curDate.year - 0) + '-' + str(curDate.year + 1)  + '/team' + nbateams[tm] + '.html') 
 print hosts    
 main()
 #print "Elapsed Time: %s" % (time.time() - start)
@@ -379,7 +399,6 @@ pastCount = 0
 pastResults = []
 for pastResName in teamLinkName:
     #return [teamName, Dates, Opp, HV, WL, OU]
-    #print pastResName
     pastResults.append(getPastResults(pastResName))
     #pastResults.append([pastResName, Dates, Opp, HV, WL, OU])
     pastCount+=1
@@ -388,6 +407,7 @@ for pastResName in teamLinkName:
 #Q-T
 pCount = 0
 prevDate = curDate
+#print pastResults
 for eachTeam in pastResults:
     #print eachTeam
     vWc = 0
@@ -418,30 +438,18 @@ for eachTeam in pastResults:
     
     
     if pCount%2 == 0:
-        #print pastResults[pCount-2][0]
-        #print pastResults[pCount-1][0]
-        
         #IJ
         if eachTeam[0] == pastResults[pCount-1][0]:
-            #print 'here'
             IJO = 0
             IJU = 0
             IJst = False
             i = 0
             for res in eachTeam[5]:
-                #print res
-                #print eachTeam[1][i], curDate
-                #print eachTeam[1][i] < curDate
-                
                 if eachTeam[1][i] < curDate:
-                    #print res
-                    #print eachTeam[2][i] 
-                    #print pastResults[pCount-2][0]
                     if eachTeam[2][i] == pastResults[pCount-2][0]:
                         if not IJst:
                             storedres = res
                             IJst = True
-                            #print 'here1'
                                 
                         if storedres == res:
                             if str(res) == 'O':
@@ -453,7 +461,6 @@ for eachTeam in pastResults:
                             break
                         
                 i+=1
-            #print IJO, IJU 
         if IJO == 0: 
             IJO = ''
         if IJU == 0: 
@@ -489,7 +496,67 @@ for eachTeam in pastResults:
             KLO = ''
         if KLU == 0: 
             KLU = ''
+
             
+        #IJ_new
+        if eachTeam[0] == pastResults[pCount-1][0]:
+            IJW = 0
+            IJL = 0
+            IJst = False
+            i = 0
+            for res in eachTeam[6]:
+                if eachTeam[1][i] < curDate:
+                    if eachTeam[2][i] == pastResults[pCount-2][0]:
+                        if not IJst:
+                            storedres = res
+                            IJst = True
+                                
+                        if storedres == res:
+                            if str(res) == 'L':
+                                IJW +=1
+                            elif str(res) == 'W':
+                                IJL +=1
+                            storedres = res
+                        else:
+                            break
+                        
+                i+=1
+        if IJW == 0: 
+            IJW = ''
+        if IJL == 0: 
+            IJL = ''
+
+        #KLW-KLL
+        if eachTeam[0] == pastResults[pCount-1][0]:
+            i = 0
+            KLW = 0
+            KLL = 0
+            KLst = False
+            for res in eachTeam[6]:
+                if eachTeam[1][i] < curDate:
+                    if eachTeam[2][i] == pastResults[pCount-2][0]:
+                        if eachTeam[3][i] == 'H':
+                            if not KLst:
+                                storedres = res
+                                KLst = True
+                            if storedres == res:
+                            
+                                if str(res) == 'L':
+                                    KLW +=1
+                                elif str(res) == 'W':
+                                    KLL +=1
+                                storedres = res
+                                
+                            else:
+                                break
+                        
+                i+=1
+            #print KLO, KLU
+        if KLW == 0: 
+            KLW = ''
+        if KLL == 0: 
+            KLL = ''
+
         MNO = 0
         MNU = 0
         MNst = False
@@ -497,8 +564,6 @@ for eachTeam in pastResults:
             i = 0
             MNCount = 0
             for res in eachTeam[5]:
-                #print eachTeam[1][i], eachTeam[2][i], eachTeam[3][i], eachTeam[4][i], eachTeam[5][i]
-                #print curDate
                 if eachTeam[1][i] < curDate:
                     if eachTeam[2][i] == pastResults[pCount-2][0]:
                         if str(res) == 'O':
@@ -509,7 +574,6 @@ for eachTeam in pastResults:
                         if MNCount>=5:
                             break
                 i+=1
-            #print MNO, MNU    
         if MNO > MNU:
             MNU = 0
         elif MNO < MNU:
@@ -519,6 +583,34 @@ for eachTeam in pastResults:
         if MNU == 0: 
             MNU = ''
 
+            
+        MNW = 0
+        MNL = 0
+        MNst = False
+        if eachTeam[0] == pastResults[pCount-1][0]:
+            i = 0
+            MNCount = 0
+            for res in eachTeam[6]:
+                if eachTeam[1][i] < curDate:
+                    if eachTeam[2][i] == pastResults[pCount-2][0]:
+                        if str(res) == 'L':
+                            MNW +=1
+                        elif str(res) == 'W':
+                            MNL +=1
+                        MNCount+=1
+                        if MNCount>=5:
+                            break
+                i+=1
+        if MNW > MNL:
+            MNW = 0
+        elif MNW < MNL:
+            MNL = 0
+        if MNL == 0: 
+            MNL = ''
+        if MNW == 0: 
+            MNW = ''
+            
+            
         vGV = 0
         if eachTeam[0] == pastResults[pCount-1][0]:
             i=0
@@ -553,27 +645,19 @@ for eachTeam in pastResults:
                         break
                     prevres = res
                 i+=1
-#        print curDate
-#        print weekDay()
         if vP == 0: 
             vP = ''
 
-        #VW
         XYO = 0
         XYU = 0
         XYst = False
         if eachTeam[0] == pastResults[pCount-1][0]:
             i = 0
             for res in eachTeam[5]:
-                #print i
-                #print eachTeam[1][i]
-                #print curDate
                 if eachTeam[1][i] < curDate:
                     if not XYst:
                         storedres = res
                         XYst = True
-                    #print storedres
-                    #print res
                                     
                     if storedres == res:
                         if str(res) == 'O':
@@ -581,20 +665,42 @@ for eachTeam in pastResults:
                         elif str(res) == 'U':
                             XYU +=1
                         storedres = res
-                        #print VWO, VWU
                     else:
                         break
                         
                 i+=1
-        #print XYO, XYU
         if XYO == 0: 
             XYO = ''
         if XYU == 0: 
             XYU = ''
 
+        XYW = 0
+        XYL = 0
+        XYst = False
+        if eachTeam[0] == pastResults[pCount-1][0]:
+            i = 0
+            for res in eachTeam[6]:
+                if eachTeam[1][i] < curDate:
+                    if not XYst:
+                        storedres = res
+                        XYst = True
+                                    
+                    if storedres == res:
+                        if str(res) == 'L':
+                            XYW +=1
+                        elif str(res) == 'W':
+                            XYL +=1
+                        storedres = res
+                    else:
+                        break
+                        
+                i+=1
+        if XYW == 0: 
+            XYW = ''
+        if XYL == 0: 
+            XYL = ''
 
-
-        #AAAB
+            
         ACADO = 0
         ACADU = 0
         ACADUst = False
@@ -637,7 +743,49 @@ for eachTeam in pastResults:
         if ACADU == 0: 
             ACADU = ''
 
-        #print ACADO, ACADU
+        ACADW = 0
+        ACADL = 0
+        ACADUst = False
+        #vHH = 0
+        vHHst = True
+        if eachTeam[0] == pastResults[pCount-1][0]:
+            #print eachTeam[0]
+            #print pastResults[pCount-1][0]
+            i = 0
+            for res in eachTeam[6]:
+                #print res
+                #print eachTeam[5]
+                if eachTeam[1][i] < curDate:
+                    #print eachTeam[1][i]
+                    #print curDate
+                    #print eachTeam[3][i]
+                    if eachTeam[3][i] == 'H':
+                        if vHHst:
+                            #vHH = 1
+                            vHHst = False
+                        if not ACADUst:
+                            storedres = res
+                            ACADUst = True        
+                        if storedres == res:
+                            if str(res) == 'L':
+                                ACADW +=1
+                            elif str(res) == 'W':
+                                ACADL +=1
+                            storedres = res
+                        else:
+                            break
+                    else:
+                        if vHHst:
+                            #vHH = 0
+                            vHHst = False
+
+                i+=1
+        if ACADW == 0: 
+            ACADW = ''
+        if ACADL == 0: 
+            ACADL = ''
+  
+  
         if legues[str(pastResults[pCount-2][0])] == legues[str(pastResults[pCount-1][0])]:
             vF = legues[str(pastResults[pCount-1][0])]
         else:
@@ -665,67 +813,87 @@ for eachTeam in pastResults:
 
         output = [str(pastResults[pCount-2][0]), str(pastResults[pCount-1][0]), weekDay(), vF, vG, vH, 
                   str(IJO), str(IJU), str(KLO), str(KLU), str(MNO), str(MNU), 
-                  str(0), str(pastResults[pCount-2][6]), str(pastResults[pCount-2][7]), 
-                  str(pastResults[pCount-1][6]), str(pastResults[pCount-1][7]), 
+                  str(0), str(pastResults[pCount-2][7]), str(pastResults[pCount-2][8]), 
+                  str(pastResults[pCount-1][7]), str(pastResults[pCount-1][8]), 
                   str(0), str(VWO), str(VWU), str(XYO), str(XYU), str(0), str(AAABO), str(AAABU), str(ACADO), str(ACADU)]
 
         sheet.Range('C'+str(crow)).value = str(pastResults[pCount-2][0])
         sheet.Range('D'+str(crow)).value = str(pastResults[pCount-1][0])
         sheet.Range('E'+str(crow)).value = weekDay()
-        #sheet.Range('F'+str(crow)).value = vF
+        try:
+            if Decimal(vfav[str(pastResults[pCount-1][0])]) >= 0:
+                sheet.Range('F'+str(crow)).value = 'V'
+            elif Decimal(vfav[str(pastResults[pCount-1][0])]) < 0:
+                sheet.Range('F'+str(crow)).value = 'H'
+        except:
+            sheet.Range('F'+str(crow)).value = ''
         sheet.Range('G'+str(crow)).value = vF
         sheet.Range('H'+str(crow)).value = vG
-        sheet.Range('J'+str(crow)).value = vH
+        sheet.Range('I'+str(crow)).value = vH
         
-        sheet.Range('K'+str(crow)).value = str(IJO)
-        sheet.Range('L'+str(crow)).value = str(IJU)
-        sheet.Range('M'+str(crow)).value = str(KLO)
-        sheet.Range('N'+str(crow)).value = str(KLU)
-        sheet.Range('O'+str(crow)).value = str(MNO)
-        sheet.Range('P'+str(crow)).value = str(MNU)
+        sheet.Range('K'+str(crow)).value = str(IJW)
+        sheet.Range('L'+str(crow)).value = str(IJL)
+        sheet.Range('M'+str(crow)).value = str(KLW)
+        sheet.Range('N'+str(crow)).value = str(KLL)
+        sheet.Range('O'+str(crow)).value = str(MNW)
+        sheet.Range('P'+str(crow)).value = str(MNL)
+        
+        sheet.Range('R'+str(crow)).value = str(IJO)
+        sheet.Range('S'+str(crow)).value = str(IJU)
+        sheet.Range('T'+str(crow)).value = str(KLO)
+        sheet.Range('U'+str(crow)).value = str(KLU)
+        sheet.Range('V'+str(crow)).value = str(MNO)
+        sheet.Range('W'+str(crow)).value = str(MNU)
 
         
-        if str(pastResults[pCount-2][6]) == str('0'):
-            sheet.Range('R'+str(crow)).value = ''
-        else:
-            sheet.Range('R'+str(crow)).value = str(pastResults[pCount-2][6])
-            
         if str(pastResults[pCount-2][7]) == str('0'):
-            sheet.Range('S'+str(crow)).value = ''
+            sheet.Range('Y'+str(crow)).value = ''
         else:
-            sheet.Range('S'+str(crow)).value = str(pastResults[pCount-2][7])
+            sheet.Range('Y'+str(crow)).value = str(pastResults[pCount-2][7])
             
-        if str(pastResults[pCount-1][6]) == str('0'):
-            sheet.Range('T'+str(crow)).value = ''
+        if str(pastResults[pCount-2][8]) == str('0'):
+            sheet.Range('Z'+str(crow)).value = ''
         else:
-            sheet.Range('T'+str(crow)).value = str(pastResults[pCount-1][6])
+            sheet.Range('Z'+str(crow)).value = str(pastResults[pCount-2][8])
             
         if str(pastResults[pCount-1][7]) == str('0'):
-            sheet.Range('U'+str(crow)).value = ''
+            sheet.Range('AA'+str(crow)).value = ''
         else:
-            sheet.Range('U'+str(crow)).value = str(pastResults[pCount-1][7])
-        
+            sheet.Range('AA'+str(crow)).value = str(pastResults[pCount-1][7])
+            
+        if str(pastResults[pCount-1][8]) == str('0'):
+            sheet.Range('AB'+str(crow)).value = ''
+        else:
+            sheet.Range('AB'+str(crow)).value = str(pastResults[pCount-1][8])
+       
         
         #sheet.Range('Q'+str(crow)).value = str(pastResults[pCount-2][6])
         #sheet.Range('R'+str(crow)).value = str(pastResults[pCount-2][7])
         #sheet.Range('S'+str(crow)).value = str(pastResults[pCount-1][6])
         #sheet.Range('T'+str(crow)).value = str(pastResults[pCount-1][7])
         
-        sheet.Range('V'+str(crow)).value = str(VWO)
-        sheet.Range('W'+str(crow)).value = str(VWU)
-        sheet.Range('X'+str(crow)).value = str(XYO)
-        sheet.Range('Y'+str(crow)).value = str(XYU)
+        sheet.Range('AD'+str(crow)).value = str(VWW)
+        sheet.Range('AE'+str(crow)).value = str(VWL)
+        sheet.Range('AF'+str(crow)).value = str(XYW)
+        sheet.Range('AG'+str(crow)).value = str(XYL)
         
-        sheet.Range('AA'+str(crow)).value = str(AAABO)
-        sheet.Range('AB'+str(crow)).value = str(AAABU)
-        sheet.Range('AC'+str(crow)).value = str(ACADO)
-        sheet.Range('AD'+str(crow)).value = str(ACADU)
+        sheet.Range('AH'+str(crow)).value = str(AAABW)
+        sheet.Range('AI'+str(crow)).value = str(AAABL)
+        sheet.Range('AJ'+str(crow)).value = str(ACADW)
+        sheet.Range('AK'+str(crow)).value = str(ACADL)
+        
+        sheet.Range('AM'+str(crow)).value = str(VWO)
+        sheet.Range('AN'+str(crow)).value = str(VWU)
+        sheet.Range('AO'+str(crow)).value = str(XYO)
+        sheet.Range('AP'+str(crow)).value = str(XYU)
+        
+        sheet.Range('AQ'+str(crow)).value = str(AAABO)
+        sheet.Range('AR'+str(crow)).value = str(AAABU)
+        sheet.Range('AS'+str(crow)).value = str(ACADO)
+        sheet.Range('AT'+str(crow)).value = str(ACADU)
         
         crow +=1
-        #wb.save(filename = r'NBA.xlsx')        
         print output
-        #print str(pastResults[pCount-2][0]), str(pastResults[pCount-1][0]), str(IJO), str(IJU), str(KLO), str(KLU), str(MNO), str(MNU), str(vP), str(pastResults[pCount-2][6]), str(pastResults[pCount-2][7]), str(pastResults[pCount-1][6]), str(pastResults[pCount-1][7]), str(VWO), str(VWU), str(XYO), str(XYU), str(AAABO), str(AAABU), str(ACADO), str(ACADU)
-        #print pastResults[pCount][0], pastResults[pCount+1][0], pastResults[pCount][6], pastResults[pCount][7], pastResults[pCount+1][6], pastResults[pCount+1][7]
     else:
     
         vGH = 0
@@ -739,19 +907,12 @@ for eachTeam in pastResults:
         if vGH == 0: 
             vGH = ''
 
-                #VW
-        #print eachTeam[0]
-        #print pastResults[pCount-2][0]
         VWO = 0
         VWU = 0
         VWst = False
-        #print eachTeam[0]
-        #print pastResults[pCount-1][0]
         if eachTeam[0] == pastResults[pCount-1][0]:
             i = 0
             for res in eachTeam[5]:
-                #print res
-                #print eachTeam[5]
                 if eachTeam[1][i] < curDate:
                     if not VWst:
                         storedres = res
@@ -766,29 +927,46 @@ for eachTeam in pastResults:
                         break
                         
                 i+=1
-        #print VWO, VWU
         if VWO == 0: 
             VWO = ''
         if VWU == 0: 
             VWU = ''
 
-        #ACAD
-        #print eachTeam[0]
-        #print pastResults[pCount-2][0]
+        VWW = 0
+        VWL = 0
+        VWst = False
+        if eachTeam[0] == pastResults[pCount-1][0]:
+            i = 0
+            for res in eachTeam[6]:
+                if eachTeam[1][i] < curDate:
+                    if not VWst:
+                        storedres = res
+                        VWst = True        
+                    if storedres == res:
+                        if str(res) == 'L':
+                            VWW +=1
+                        elif str(res) == 'W':
+                            VWL +=1
+                        storedres = res
+                    else:
+                        break
+                        
+                i+=1
+        if VWW == 0: 
+            VWW = ''
+        if VWL == 0: 
+            VWL = ''
+            
+
         AAABO = 0
         AAABU = 0
         AAABUst = False
         vVV = 0
         vVVst = True
-        #print eachTeam[0]
-        #print pastResults[pCount-1][0]
         if eachTeam[0] == pastResults[pCount-1][0]:
             i = 0
             for res in eachTeam[5]:
                 if eachTeam[1][i] < curDate:
-                    #print eachTeam[1][i]
-                    #print eachTeam[0]
-                    #print eachTeam[3][i]
                     if eachTeam[3][i] == 'V':
                         if vVVst:
                             vVV = 1
@@ -811,15 +989,47 @@ for eachTeam in pastResults:
                             vVVst = False
                             
                 i+=1
-        #print AAABO, AAABU
         if AAABO == 0: 
             AAABO = ''
         if AAABU == 0: 
             AAABU = ''
 
+        AAABW = 0
+        AAABL = 0
+        AAABUst = False
+        #vVV = 0
+        vVVst = True
+        if eachTeam[0] == pastResults[pCount-1][0]:
+            i = 0
+            for res in eachTeam[6]:
+                if eachTeam[1][i] < curDate:
+                    if eachTeam[3][i] == 'V':
+                        if vVVst:
+                            #vVV = 1
+                            vVVst = False
+                        if not AAABUst:
+                            storedres = res
+                            AAABUst = True
+                                        
+                        if storedres == res:
+                            if str(res) == 'L':
+                                AAABW +=1
+                            elif str(res) == 'W':
+                                AAABL +=1
+                            storedres = res
+                        else:
+                            break
+                    else:
+                        if vVVst:
+                            #vVV = 0
+                            vVVst = False
+                            
+                i+=1
+        if AAABW == 0: 
+            AAABW = ''
+        if AAABL == 0: 
+            AAABL = ''
+
+            
 workBook.Save
 excel.Visible = True
-#workBook.Close(SaveChanges=1)
-#excel.Quit()
-#excel.Visible = 0 
-#del excel
